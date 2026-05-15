@@ -1999,6 +1999,31 @@ function updateDesert(t) {
     }
   });
 
+  // ── Click-spawned shooting stars ───────────────────────────────
+  if (md.clickStars) {
+    for (let ci = md.clickStars.length - 1; ci >= 0; ci--) {
+      const cs  = md.clickStars[ci];
+      cs.age   += 1 / 30;
+      cs.x     += cs.dx;
+      cs.y     += cs.dy;
+      const prog = cs.age / cs.maxAge;
+      const op   = Math.sin(prog * Math.PI) * 0.95;
+      cs.mat.opacity = op;
+      for (let i = 0; i < cs.TRAIL; i++) {
+        const frac   = i / (cs.TRAIL - 1);
+        cs.pos[i*3]   = cs.x - cs.dx * frac * cs.TRAIL * 0.9;
+        cs.pos[i*3+1] = cs.y - cs.dy * frac * cs.TRAIL * 0.9;
+        cs.pos[i*3+2] = cs.z;
+      }
+      cs.geo.attributes.position.needsUpdate = true;
+      if (cs.age >= cs.maxAge) {
+        scene.remove(cs.pts);
+        cs.geo.dispose(); cs.mat.dispose();
+        md.clickStars.splice(ci, 1);
+      }
+    }
+  }
+
   // ── Dust devils (click-spawned) ────────────────────────────────
   if (md.dustDevils) {
     for (let di = md.dustDevils.length - 1; di >= 0; di--) {
@@ -2975,29 +3000,42 @@ function clickSacred() {
 }
 
 function clickDesert(e) {
+  // Always fire a shooting star — it starts at the exact click position in world space
+  raycaster.setFromCamera(clickVec, camera);
+  const origin = raycaster.ray.at(18, new THREE.Vector3());
+  spawnClickStar(origin.x, origin.y, origin.z);
+
+  // Also spawn a dust devil if clicking the lower portion of the screen
   const screenY = e.clientY / window.innerHeight;
-  if (screenY < 0.68) {
-    // Sky — fire a shooting star from near the click position
-    const ss = md.shootingStars ? md.shootingStars.find(function(s) { return !s.active; }) : null;
-    if (ss) {
-      ss.active  = true;
-      ss.age     = 0;
-      ss.maxAge  = 1.1 + Math.random() * 0.6;
-      ss.x       = camera.position.x + (e.clientX / window.innerWidth - 0.5) * 60;
-      ss.y       = 16 + Math.random() * 12;
-      ss.z       = camera.position.z - (30 + Math.random() * 60);
-      ss.dx      = (Math.random() - 0.5) * 0.6;
-      ss.dy      = -(0.35 + Math.random() * 0.35);
-    }
-  } else {
-    // Ground — spawn a dust devil at the clicked world position
-    raycaster.setFromCamera(clickVec, camera);
+  if (screenY > 0.62) {
     const plane  = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const target = new THREE.Vector3();
     if (raycaster.ray.intersectPlane(plane, target)) {
       spawnDustDevil(target.x, target.z);
     }
   }
+}
+
+function spawnClickStar(sx, sy, sz) {
+  if (!md.clickStars) md.clickStars = [];
+  if (md.clickStars.length >= 5) return;
+
+  const TRAIL = 16;
+  const pos   = new Float32Array(TRAIL * 3);
+  const geo   = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({
+    color: 0xffffff, size: 1.1, transparent: true, opacity: 0.95,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+  });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+
+  // Diagonal trajectory across screen
+  const dx = (Math.random() > 0.5 ? 1 : -1) * (0.12 + Math.random() * 0.1);
+  const dy = -(0.08 + Math.random() * 0.07);
+
+  md.clickStars.push({ pts, pos, geo, mat, TRAIL, x: sx, y: sy, z: sz, dx, dy, age: 0, maxAge: 1.4 });
 }
 
 function clickStorm(e) {
