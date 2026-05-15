@@ -145,7 +145,15 @@
     box-shadow: 0 0 5px rgba(180,130,255,0.6);
   }
 
-  /* Mode transition overlay */
+  /* ── Interaction hint (fades out after 5s or on first click) ─── */
+  #hint {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    font-family: 'Cormorant Garamond', serif; font-size: 10px; font-weight: 300;
+    letter-spacing: 0.38em; color: rgba(255,255,255,0.22); text-transform: uppercase;
+    white-space: nowrap; pointer-events: none; z-index: 10;
+    opacity: 0; transition: opacity 1.2s ease;
+  }
+  #hint.visible { opacity: 1; }
   #transition {
     position: fixed; inset: 0; background: #000;
     pointer-events: none; opacity: 0; z-index: 500;
@@ -188,6 +196,7 @@
 </button>
 
 <div id="cursor"></div>
+<div id="hint"></div>
 <div id="speed-indicator">
   <span class="spip"></span><span class="spip"></span><span class="spip"></span>
   <span class="spip"></span><span class="spip"></span>
@@ -343,6 +352,35 @@ const clickVec       = new THREE.Vector2();
 let   mouseDown      = false;
 const speedIndicatorEl = document.getElementById('speed-indicator');
 
+// ── Hint system ───────────────────────────────────────────────────────────────
+const hintEl = document.getElementById('hint');
+const HINTS = {
+  warp:   'click to pulse  ·  scroll to warp',
+  forest: 'click water to ripple  ·  click sky to scatter',
+  ocean:  'click to bloom  ·  hover near jellyfish',
+  sacred: 'click to shockwave  ·  scroll to zoom',
+  desert: 'click sky for stars  ·  click ground for dust',
+  storm:  'click to strike  ·  hold to intensify',
+};
+let hintTimer = null;
+let hintDismissed = false;
+
+function showHint(mode) {
+  if (hintDismissed) return;
+  clearTimeout(hintTimer);
+  hintEl.textContent = HINTS[mode] || '';
+  hintEl.classList.add('visible');
+  hintTimer = setTimeout(function() {
+    hintEl.classList.remove('visible');
+  }, 5000);
+}
+
+function dismissHint() {
+  clearTimeout(hintTimer);
+  hintEl.classList.remove('visible');
+  hintDismissed = true;
+}
+
 const FRAME_MS = 1000 / 30;
 let lastFrame  = 0;
 
@@ -414,6 +452,7 @@ window.addEventListener('resize', () => {
 
 document.addEventListener('click', function(e) {
   if (e.target.closest && e.target.closest('#ui, button')) return;
+  dismissHint();
   clickVec.x = (e.clientX / window.innerWidth)  *  2 - 1;
   clickVec.y = (e.clientY / window.innerHeight) * -2 + 1;
   spawnClickRipple(e.clientX, e.clientY);
@@ -483,6 +522,7 @@ function switchMode(mode) {
   createScene();
   currentMode = mode;
   md = {};
+  hintDismissed = false;  // reset per mode so hint re-appears on each scene change
 
   const labels = { warp: 'Warp', forest: 'Forest Stream', ocean: 'Deep Ocean', sacred: 'Sacred Geometry', desert: 'Desert Night', storm: 'Thunderstorm' };
   labelEl.textContent = labels[mode];
@@ -517,6 +557,7 @@ function switchMode(mode) {
 
   ({ warp: initWarp, forest: initForest, ocean: initOcean, sacred: initSacred, desert: initDesert, storm: initStorm })[mode]();
   loop();
+  setTimeout(function() { showHint(mode); }, 800);
 }
 
 // ============================================================
@@ -1323,7 +1364,7 @@ function initOcean() {
       -(4 + Math.random() * 58)
     );
     scene.add(group);
-    jellies.push({ group, phase: Math.random() * Math.PI * 2, speed: 0.008 + Math.random() * 0.01, hue });
+    jellies.push({ group, phase: Math.random() * Math.PI * 2, speed: 0.008 + Math.random() * 0.01, hue, vx: 0, vy: 0 });
   }
 
   md.shafts   = shafts;
@@ -1409,14 +1450,20 @@ function updateOcean(t) {
     j.group.position.z  += speed * 0.55;
     j.group.rotation.y  += 0.005;
     if (j.group.position.z > camera.position.z + 6) j.group.position.z -= 66;
-    // Screen-space proximity: flee from cursor
+    // Screen-space proximity: flee from cursor with velocity accumulation
     const proj = j.group.position.clone().project(camera);
     const pdx  = proj.x - mouseNX;
     const pdy  = -proj.y - mouseNY;
-    if (Math.sqrt(pdx*pdx + pdy*pdy) < 0.28 && proj.z < 1) {
-      j.group.position.x += (j.group.position.x - camera.position.x) * 0.005;
-      j.group.position.y += (j.group.position.y - camera.position.y) * 0.003;
+    const dist = Math.sqrt(pdx*pdx + pdy*pdy);
+    if (dist < 0.45 && proj.z < 1) {
+      const strength = (0.45 - dist) / 0.45;   // 0→1 as cursor gets closer
+      j.vx += (j.group.position.x - camera.position.x) * strength * 0.04;
+      j.vy += (j.group.position.y - camera.position.y) * strength * 0.025;
     }
+    // Dampen velocity and apply it
+    j.vx *= 0.88; j.vy *= 0.88;
+    j.group.position.x += j.vx;
+    j.group.position.y += j.vy;
   });
 }
 
@@ -2751,6 +2798,7 @@ speedIndicatorEl.style.display = 'flex';
 createScene();
 initWarp();
 loop();
+setTimeout(function() { showHint('warp'); }, 1200);
 
 function buildCoyote() {
   const col = () => new THREE.MeshBasicMaterial({ color: 0x6677aa, transparent: true, opacity: 1.0, depthWrite: false });
