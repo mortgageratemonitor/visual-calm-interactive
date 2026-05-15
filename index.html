@@ -2968,18 +2968,18 @@ function clickSacred() {
 
 function clickDesert(e) {
   const screenY = e.clientY / window.innerHeight;
-  if (screenY < 0.45) {
+  if (screenY < 0.68) {
     // Sky — fire a shooting star from near the click position
     const ss = md.shootingStars ? md.shootingStars.find(function(s) { return !s.active; }) : null;
     if (ss) {
-      ss.active    = true;
-      ss.age       = 0;
-      ss.x         = camera.position.x + (e.clientX / window.innerWidth - 0.5) * 100;
-      ss.y         = 30 + Math.random() * 20;
-      ss.z         = camera.position.z - (60 + Math.random() * 100);
-      ss.dx        = (Math.random() - 0.5) * 0.5;
-      ss.dy        = -(0.5 + Math.random() * 0.4);
-      ss.nextSpawn = 5 + Math.random() * 12;
+      ss.active  = true;
+      ss.age     = 0;
+      ss.maxAge  = 1.1 + Math.random() * 0.6;
+      ss.x       = camera.position.x + (e.clientX / window.innerWidth - 0.5) * 60;
+      ss.y       = 16 + Math.random() * 12;
+      ss.z       = camera.position.z - (30 + Math.random() * 60);
+      ss.dx      = (Math.random() - 0.5) * 0.6;
+      ss.dy      = -(0.35 + Math.random() * 0.35);
     }
   } else {
     // Ground — spawn a dust devil at the clicked world position
@@ -3056,11 +3056,6 @@ function spawnDustDevil(x, z) {
   md.dustDevils.push({ pts, dPos, angles, heights, N, x, z, age: 0, maxAge: 5 + Math.random() * 3 });
 }
 
-
--e 
-</script>
-</body>
-</html>
 
 </script>
 </body>
