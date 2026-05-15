@@ -1823,16 +1823,19 @@ function initDesert() {
 
   // Shooting stars
   const shootingStars = [];
+  const SS_TRAIL = 14;
   for (let s = 0; s < 8; s++) {
-    const pos = new Float32Array(6);
+    const pos = new Float32Array(SS_TRAIL * 3);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const line = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-      color: 0xeeeeff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending,
-    }));
-    scene.add(line);
-    shootingStars.push({ line, pos, active: false, age: 0,
-      maxAge: 0.9 + Math.random() * 0.5, nextSpawn: 3 + Math.random() * 10,
+    const mat = new THREE.PointsMaterial({
+      color: 0xffffff, size: 0.32, transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+    });
+    const pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+    shootingStars.push({ line: pts, pos, SS_TRAIL, active: false, age: 0,
+      maxAge: 1.1 + Math.random() * 0.5, nextSpawn: 3 + Math.random() * 10,
       x: 0, y: 0, z: 0, dx: 0, dy: 0 });
   }
 
@@ -1983,10 +1986,15 @@ function updateDesert(t) {
     } else {
       s.age += 1/30;
       s.x += s.dx; s.y += s.dy;
-      s.pos[0] = s.x;          s.pos[1] = s.y;          s.pos[2] = s.z;
-      s.pos[3] = s.x - s.dx*8; s.pos[4] = s.y - s.dy*8; s.pos[5] = s.z;
+      const T = s.SS_TRAIL;
+      for (let i = 0; i < T; i++) {
+        const frac = i / (T - 1);
+        s.pos[i*3]   = s.x - s.dx * frac * T;
+        s.pos[i*3+1] = s.y - s.dy * frac * T;
+        s.pos[i*3+2] = s.z;
+      }
       s.line.geometry.attributes.position.needsUpdate = true;
-      s.line.material.opacity = Math.sin((s.age / s.maxAge) * Math.PI) * 0.95;
+      s.line.material.opacity = Math.sin((s.age / s.maxAge) * Math.PI) * 1.0;
       if (s.age >= s.maxAge) { s.active = false; s.line.material.opacity = 0; }
     }
   });
