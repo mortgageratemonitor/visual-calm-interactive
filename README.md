@@ -1,4 +1,4 @@
-# Cosmic Calm
+# Cosmic Calm Interactive
 
 A browser-based generative visual experience designed for relaxation and focus. Six immersive 3D modes run entirely in your browser — no backend, no login, no time limit. Built to leave running for hours.
 
