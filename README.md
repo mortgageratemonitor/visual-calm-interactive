@@ -1,8 +1,8 @@
-# Cosmic Calm Interactive
+# Cosmic Calm
 
-A browser-based generative visual experience designed for relaxation and focus. Six immersive 3D modes run entirely in your browser — no backend, no login, no time limit. Built to leave running for hours.
+A browser-based generative visual experience designed for relaxation and focus. Seven immersive 3D modes run entirely in your browser — no backend, no login, no time limit. Built to leave running for hours.
 
-Live at [mortgageratemonitor.github.io/visual-calm-interactive](https://mortgageratemonitor.github.io/visual-calm-interactive/)
+Live at [mortgageratemonitor.github.io/visual-calm](https://mortgageratemonitor.github.io/visual-calm/)
 
 ---
 
@@ -67,11 +67,20 @@ A **Storm** toggle sits in the bottom-right corner. When enabled, lightning stri
 
 ---
 
+### Murmuration
+3,500 starlings wheel and ripple across a moonlit desert sky using an emergent Boids simulation — no shapes are scripted, every formation arises from three simple rules applied to each bird simultaneously: stay apart from immediate neighbors, match the velocity of nearby birds, drift toward the local center of mass. The result is a living, breathing mass that folds, splits, and reforms unpredictably every second.
+
+You observe from a fixed vantage point at a distance, watching the flock move against the full Desert Night environment — starfield, moon with glow halo, dunes with ridge highlights, saguaro cacti, and rock formations — giving the birds real depth and scale to fly against. The camera sways gently from side to side over time.
+
+**Interactive:** Click anywhere to send a hawk into the flock at that exact screen position. The hawk appears as an amber streak and applies a strong repulsion force to every bird within range — the flock parts, swirls, and closes back around it. Up to 3 hawks can be active at once; each fades out after 8 seconds.
+
+---
+
 ## Controls
 
 | Input | Effect |
 |-------|--------|
-| **Mode buttons** | Bottom center pill — switches between the six scenes with a fade transition |
+| **Mode buttons** | Bottom center pill — switches between the seven scenes with a fade transition |
 | **Mouse move / finger drag** | Subtly influences every scene |
 | **Click** | Triggers an interaction unique to the current scene |
 | **Scroll** | Warp: adjusts speed · Sacred Geometry: zooms camera |
@@ -101,4 +110,5 @@ UI and toggles auto-hide after 3.5 seconds of inactivity and reappear on any mou
 - Single `index.html` — no build step, no dependencies to install
 - Frame rate capped at 30fps with full memory cleanup on every scene switch
 - All interactivity uses raycasting against the live 3D scene — no screen-space hacks
+- Murmuration uses an integer-key spatial hash grid (pre-allocated typed arrays, zero heap allocation per frame) with physics running at 15fps and positions integrating at 30fps for smooth motion
 - Hosted via GitHub Pages — static, always-on, no cold starts
